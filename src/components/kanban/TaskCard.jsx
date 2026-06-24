@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useDrag } from "react-dnd";
-import { High, Medium, Low, Profile } from "../../UI/icons";
+import { High, Medium, Low, Profile } from "../../UI/Icons";
+
+
 import { useNavigate } from "react-router-dom";
 import {
   Timer,

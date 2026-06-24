@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { UserRound, Pencil } from "lucide-react";
-import { High, Medium, Low, Profile } from "../../../../UI/icons";
+import { High, Medium, Low, Profile } from "../../../../UI/Icons";
 import {
   FEATURES,
   initialTasks,

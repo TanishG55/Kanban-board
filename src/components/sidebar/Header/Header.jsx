@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PanelLeftClose, PanelRightClose } from "lucide-react";
-import { Logo } from "../../../UI/icons";
+import { Logo } from "../../../UI/Icons";
 
 function Header({OpenPanel , setOpenPanel}) {
   const navigate = useNavigate();

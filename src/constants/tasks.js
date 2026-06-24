@@ -1,4 +1,4 @@
-import { Profile } from "../UI/icons";
+import { Profile } from "../UI/Icons";
 
 export const initialTasks = [
   {

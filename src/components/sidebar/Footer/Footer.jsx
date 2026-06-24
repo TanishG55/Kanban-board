@@ -1,5 +1,5 @@
 import React from 'react'
-import { Profile } from '../../../UI/icons'
+import { Profile } from '../../../UI/Icons'
 function Footer() {
   return (
     <div className="flex flex-row mt-auto border-t border-border p-4">
