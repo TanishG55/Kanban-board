@@ -143,7 +143,7 @@ function TaskCard({ task, setTasks }) {
 
           {task.assignee.name != "Unassigned" && (
             <div className="flex items-center justify-center">
-              {<Profile />}
+              {<Profile/>}
             </div>
           )}
         </div>

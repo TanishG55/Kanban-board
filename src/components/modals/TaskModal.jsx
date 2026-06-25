@@ -25,6 +25,7 @@ import { initialTasks } from "../../constants/tasks";
 import { columns } from "../../constants/columns";
 import { USERS, Priorities } from "../../constants/tasks";
 import Subtasks from "./subtasks";
+import { High, Low, Medium } from "../../UI/Icons";
 
 function TaskModal({ onClose, setTasks, state, task }) {
   const [expandDescription, setExpandDescription] = useState(true);
@@ -89,6 +90,28 @@ function TaskModal({ onClose, setTasks, state, task }) {
     subtasks: task.subtasks,
   });
 
+  const priorityStyles = {
+    High: {
+      icon: High,
+      text: "text-red-500",
+      bg: "bg-red-100",
+    },
+    Medium: {
+      icon: Medium,
+      text: "text-amber-500",
+      bg: "bg-amber-100",
+    },
+    Low: {
+      icon: Low,
+      text: "text-green-500",
+      bg: "bg-green-100",
+    },
+  };
+
+  const PriorityIcon = priorityStyles[TaskForm.priority]?.icon;
+  const currentPriority = priorityStyles[TaskForm.priority];
+  console.log(currentPriority);
+
   useEffect(() => {
     if ((state === "edit" && task) || (state === "open" && task)) {
       setTaskForm(task);
@@ -146,12 +169,12 @@ function TaskModal({ onClose, setTasks, state, task }) {
   //   }));
   // };
 
-  // const updateTaskForm = (field, value) => {
-  //   setTaskForm((prev) => ({
-  //     ...prev,
-  //     [field]: value,
-  //   }));
-  // };
+  const updateTaskForm = (field, value) => {
+    setTaskForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
@@ -324,57 +347,22 @@ function TaskModal({ onClose, setTasks, state, task }) {
                 </span>
               </button>
               {expandTasks && (
-                // <div>
-                //   <div className="flex flex-row gap-2">
-                //     <input
-                //       value={subtaskInput}
-                //       onChange={(e) => setSubtaskInput(e.target.value)}
-                //       placeholder="Add subtask"
-                //       className="border-b p-2 outline-none text-[12px]"
-                //     />
-
-                //     <button className="cursor-pointer" onClick={addSubtask}>
-                //       <Plus size={16} />
-                //     </button>
-                //   </div>
-
-                //   <div className="mt-4">
-                //     {TaskForm.subtasks?.map((item) => (
-                //       <label key={item.id} className="flex items-center gap-3">
-                //         <input
-                //           type="checkbox"
-                //           checked={item.completed}
-                //           onChange={() => toggleSubtask(item.id)}
-                //         />
-
-                //         <span
-                //           className={
-                //             item.completed
-                //               ? "line-through text-gray-400 text-[12px]"
-                //               : "text-[12px]"
-                //           }
-                //         >
-                //           {item.title}
-                //         </span>
-                //       </label>
-                //     ))}
-                //   </div>
-                // </div>
                 <Subtasks
                   subtasks={TaskForm.subtasks}
                   setTaskForm={setTaskForm}
+                  updateTaskForm = {updateTaskForm}
                 />
               )}
             </div>
           </div>
           {/* rhs */}
-          <div className="flex flex-col gap-4">
+          <div className="w-[360px] shrink-0 flex flex-col gap-4">
             <div className="flex flex-row items-center gap-4 mt-4">
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                  className="cursor-pointer flex items-center gap-1 rounded-xs px-3 py-1.5 text-sm font-medium bg-gray-200"
+                  className="w-auto truncate justify-between cursor-pointer flex items-center gap-1 rounded-xs px-3 py-1.5 text-sm font-medium bg-gray-200 whitespace-nowrap"
                 >
                   {TaskForm.status}
                   <ChevronDown size={14} strokeWidth={2.5} />
@@ -404,7 +392,7 @@ function TaskModal({ onClose, setTasks, state, task }) {
 
               <button
                 type="button"
-                className="cursor-pointer flex flex-row items-center gap-1.5 rounded-xs border border-gray-200 bg-surface px-3 py-1.5 text-sm font-medium text-slate-700"
+                className="cursor-pointer flex flex-row items-center gap-1.5 rounded-xs border border-gray-200 bg-surface px-3 py-1.5 text-sm font-medium text-slate-700 whitespace-nowrap"
               >
                 <Bot size={16} className="text-slate-600" />
                 Agents
@@ -412,7 +400,7 @@ function TaskModal({ onClose, setTasks, state, task }) {
 
               <button
                 type="button"
-                className="cursor-pointer flex flex-row items-center gap-1.5 rounded-xs border border-gray-200 bg-surface px-3 py-1.5 text-sm font-medium text-slate-700"
+                className="cursor-pointer flex flex-row items-center gap-1.5 rounded-xs border border-gray-200 bg-surface px-3 py-1.5 text-sm font-medium text-slate-700 whitespace-nowrap"
               >
                 <Sparkles size={16} className="text-slate-600" />
                 Improve Tasks
@@ -465,19 +453,28 @@ function TaskModal({ onClose, setTasks, state, task }) {
                       Priority
                     </span>
 
-                    <select
-                      value={TaskForm.priority}
-                      onChange={(e) =>
-                        updateTaskForm("priority", e.target.value)
-                      }
-                      className="cursor-pointer appearance-none border-0 outline-none focus:ring-0  font-sans text-[14px] leading-[20px] text-[#292A2E]"
-                    >
-                      {Priorities.map((priority) => (
-                        <option className="p-2" key={priority}>
-                          {priority}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex flex-row gap-2 items-center">
+                      {PriorityIcon && (
+                        <PriorityIcon
+                          size={20}
+                          className={currentPriority.text}
+                        />
+                      )}
+
+                      <select
+                        value={TaskForm.priority}
+                        onChange={(e) =>
+                          updateTaskForm("priority", e.target.value)
+                        }
+                        className="cursor-pointer appearance-none border-0 outline-none focus:ring-0  font-sans text-[14px] leading-[20px] text-[#292A2E]"
+                      >
+                        {Priorities.map((priority) => (
+                          <option className="p-2" key={priority}>
+                            {priority}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
                     {/* Due Date */}
                     <span className="font-medium font-sans text-[14px] leading-[19px] text-[#505258]">
