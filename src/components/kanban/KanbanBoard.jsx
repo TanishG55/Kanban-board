@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Column from "./Column";
 
 import { columns } from "../../constants/columns";
@@ -7,10 +7,10 @@ import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { useLockBodyScroll } from "../../hooks/useLockBodyScroll";
 import KanbanFilters from "./KanbanFilters";
 import { filterTasks } from "../../helpers/filterTasks";
+import { getTasks, saveTasks } from "../../services/indexedDB/taskStorage";
 
 function KanbanBoard() {
-  const [tasks, setTasks] = useLocalStorage("tasks", initialTasks);
-  console.log(tasks);
+  const [tasks, setTasks] = useState([]);
 
   const [allCols] = useState(columns);
   const [priorities] = useState(Priorities);
@@ -48,6 +48,29 @@ function KanbanBoard() {
       ),
     );
   };
+
+  useEffect(() => {
+    async function loadTasks() {
+      const stored = await getTasks();
+      console.log(stored);
+
+      if (stored.length === 0) {
+        await saveTasks(initialTasks);
+
+        setTasks(initialTasks);
+      } else {
+        setTasks(stored);
+      }
+    }
+
+    loadTasks();
+  }, []);
+
+  useEffect(() => {
+    if (tasks.length) {
+      saveTasks(tasks);
+    }
+  }, [tasks]);
 
   return (
     <div className="p-4 bg-slate-50 overflow-auto">

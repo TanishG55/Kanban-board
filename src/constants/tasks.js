@@ -1,5 +1,3 @@
-import { Profile } from "../UI/Icons";
-
 export const initialTasks = [
   {
     id: "TH-2500",
@@ -19,7 +17,7 @@ export const initialTasks = [
     assignee: {
       id: "U1",
       name: "Tanish",
-      avatar: Profile,
+      avatar: "",
     },
 
     reporter: "Admin",

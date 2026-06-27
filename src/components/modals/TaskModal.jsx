@@ -40,6 +40,7 @@ function TaskModal({ onClose, setTasks, state, task }) {
   const [editTitle, SeteditTitle] = useState(task.title);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [previousTitle, setPreviousTitle] = useState(task.title);
 
   function generateTHID() {
     const randomNum = Math.floor(Math.random() * 10000);
@@ -236,10 +237,11 @@ function TaskModal({ onClose, setTasks, state, task }) {
               </button>
               <button
                 onClick={() => {
-                  setTasks((prev) =>
-                    prev.map((t) => (t.id === TaskForm.id ? TaskForm : t)),
-                  );
-                  onClose();
+                  if (state === "create") {
+                    addTask();
+                  } else {
+                    editTask();
+                  }
                 }}
                 className="flex items-center justify-center cursor-pointer h-8 w-8  px-0.5 py-0 border border-gray-300 rounded-[4px]"
               >
@@ -256,22 +258,36 @@ function TaskModal({ onClose, setTasks, state, task }) {
             {/* left side content */}
             <div>
               <div>
-                {isEditingTitle ? (
+                {isEditingTitle || state === "create" ? (
                   <input
                     value={TaskForm.title}
                     autoFocus
+                    placeholder="Enter task title"
                     onChange={(e) => {
                       updateTaskForm("title", e.target.value);
                     }}
-                    onBlur={() => setIsEditingTitle(false)}
+                    onBlur={() => {
+                      if (!TaskForm.title.trim()) {
+                        updateTaskForm("title", previousTitle);
+                      }
+                      setIsEditingTitle(false);
+                    }}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") setIsEditingTitle(false);
+                      if (e.key === "Enter") {
+                        if (!TaskForm.title.trim()) {
+                          updateTaskForm("title", previousTitle);
+                        }
+                        setIsEditingTitle(false);
+                      }
                     }}
                     className="text-[24px] font-[653] border-b outline-none w-full"
                   />
                 ) : (
                   <span
-                    onClick={() => setIsEditingTitle(true)}
+                    onClick={() => {
+                      setPreviousTitle(previousTitle);
+                      setIsEditingTitle(true);
+                    }}
                     className="cursor-pointer font-sans text-[24px] font-[653] leading-[28px] text-[rgb(41,42,46)]"
                   >
                     {TaskForm.title}
@@ -350,7 +366,7 @@ function TaskModal({ onClose, setTasks, state, task }) {
                 <Subtasks
                   subtasks={TaskForm.subtasks}
                   setTaskForm={setTaskForm}
-                  updateTaskForm = {updateTaskForm}
+                  updateTaskForm={updateTaskForm}
                 />
               )}
             </div>

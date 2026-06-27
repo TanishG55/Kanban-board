@@ -75,9 +75,43 @@ function Column({ title, tasks, moveTask, setTasks }) {
         <span className="text-[14px]">New</span>
       </button>
 
-       {openModal && (
+      {/* {openModal && (
         <TaskModal onClose={() => setOpenModal(false)} setTasks={setTasks} />
-      )} 
+      )} */}
+      {openModal && (
+        <TaskModal
+          state="create"
+          onClose={() => setOpenModal(false)}
+          setTasks={setTasks}
+          task={{
+            id: `TH-${Date.now()}`,
+            title: "",
+            description: "",
+            status: title, // open in which particular - column
+            feature: {
+              id: "",
+              name: "",
+              color: "#2563eb",
+            },
+            priority: "Medium",
+            assignee: {
+              id: "",
+              name: "",
+              avatar: "",
+            },
+            reporter: "",
+            labels: [],
+            storyPoints: 0,
+            environment: "",
+            dueDate: "",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            commentsCount: 0,
+            attachmentsCount: 0,
+            subtasks: [],
+          }}
+        />
+      )}
     </div>
   );
 }

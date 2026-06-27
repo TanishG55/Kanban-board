@@ -84,7 +84,7 @@ function Subtasks({ subtasks = [], setTaskForm, updateTaskForm }) {
         </div> */}
 
         {/* Header */}
-        <div className="grid grid-cols-[minmax(0,2fr)_120px_160px_120px] px-4 py-3 bg-gray-50 font-sans text-[12px] leading-[16px] font-[653] text-[#505258] border-b">
+        <div className="grid grid-cols-[minmax(0,90px)_120px_160px_120px] px-4 py-3 bg-gray-50 font-sans text-[12px] leading-[16px] font-[653] text-[#505258] border-b">
           <span>Work</span>
           <span>Priority</span>
           <span>Assignee</span>
