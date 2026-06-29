@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { UserRound, Pencil } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { useDrag, useDrop } from "react-dnd";
+import { ChevronDown, ChevronRight, UserRound, Pencil } from "lucide-react";
 import { High, Medium, Low, Profile } from "../../../../UI/Icons";
 import {
   FEATURES,
@@ -10,6 +11,93 @@ import { columns } from "../../../../constants/columns";
 import { useNavigate, useParams } from "react-router-dom";
 import { useLocalStorage } from "../../../../hooks/useLocalStorage";
 import TaskDetails from "../../../task/TaskDetails";
+
+const TASK_ROW_TYPE = "MY_TASK_ROW";
+
+function DraggableTaskRow({
+  children,
+  featureId,
+  index,
+  moveTask,
+  taskId,
+}) {
+  const rowRef = useRef(null);
+
+  const [{ isDragging }, drag] = useDrag(
+    () => ({
+      type: TASK_ROW_TYPE,
+      item: { id: taskId, featureId, index },
+      collect: (monitor) => ({
+        isDragging: monitor.isDragging(),
+      }),
+    }),
+    [featureId, index, taskId],
+  );
+
+  const [, drop] = useDrop(
+    () => ({
+      accept: TASK_ROW_TYPE,
+      hover: (item, monitor) => {
+        if (
+          !rowRef.current ||
+          item.id === taskId ||
+          item.featureId !== featureId
+        ) {
+          return;
+        }
+
+        const bounds = rowRef.current.getBoundingClientRect();
+        const pointer = monitor.getClientOffset();
+
+        if (!pointer) return;
+
+        const pointerY = pointer.y - bounds.top;
+        const middleY = (bounds.bottom - bounds.top) / 2;
+
+        if (item.index < index && pointerY < middleY) return;
+        if (item.index > index && pointerY > middleY) return;
+
+        const insertAfter = item.index < index;
+        moveTask(item.id, taskId, featureId, insertAfter);
+        item.index = index;
+      },
+      drop: (item, monitor) => {
+        if (
+          !rowRef.current ||
+          item.id === taskId ||
+          item.featureId === featureId
+        ) {
+          return;
+        }
+
+        const bounds = rowRef.current.getBoundingClientRect();
+        const pointer = monitor.getClientOffset();
+        const insertAfter = pointer
+          ? pointer.y > bounds.top + (bounds.bottom - bounds.top) / 2
+          : false;
+
+        moveTask(item.id, taskId, featureId, insertAfter);
+        item.featureId = featureId;
+        item.index = index;
+      },
+    }),
+    [featureId, index, moveTask, taskId],
+  );
+
+  const connectRow = useCallback(
+    (node) => {
+      rowRef.current = node;
+      drag(drop(node));
+    },
+    [drag, drop],
+  );
+
+  return (
+    <div ref={connectRow} style={{ opacity: isDragging ? 0.45 : 1 }}>
+      {children}
+    </div>
+  );
+}
 
 function MyTasks() {
   const navigate = useNavigate();
@@ -23,6 +111,9 @@ function MyTasks() {
   const [showPriorityDropdown, SetshowPriorityDropdown] = useState(null);
   const [showStatusDropdown, SetshowStatusDropdown] = useState(null);
   const [showFeatureDropdown, setShowFeatureDropdown] = useState(null);
+  // expanding state for each features
+  const [expanded, setExpanded] = useState({});
+
   const statuses = columns;
 
   const [newTitle, setnewTitle] = useState("");
@@ -44,6 +135,68 @@ function MyTasks() {
       bg: "bg-red-100",
     },
   };
+
+  const groupedTasks = tasks.reduce((acc, task) => {
+    const featureId = task.feature?.id || "backlog";
+
+    if (!acc[featureId]) {
+      acc[featureId] = {
+        id: featureId,
+        title: task.feature?.name || "Backlog",
+        tasks: [],
+      };
+    }
+
+    acc[featureId].tasks.push(task);
+
+    return acc;
+  }, {});
+
+  // toggle for each feature
+
+  const toggleSprint = (id) => {
+    setExpanded((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const moveTask = useCallback(
+    (draggedTaskId, targetTaskId, targetFeatureId, insertAfter) => {
+      if (draggedTaskId === targetTaskId) return;
+
+      setTasks((prevTasks) => {
+        const draggedIndex = prevTasks.findIndex(
+          (task) => task.id === draggedTaskId,
+        );
+        const targetTask = prevTasks.find(
+          (task) => task.id === targetTaskId,
+        );
+
+        if (draggedIndex === -1 || !targetTask) return prevTasks;
+
+        const nextTasks = [...prevTasks];
+        const [draggedTask] = nextTasks.splice(draggedIndex, 1);
+        const targetIndex = nextTasks.findIndex(
+          (task) => task.id === targetTaskId,
+        );
+
+        if (targetIndex === -1) return prevTasks;
+
+        const movedTask =
+          draggedTask.feature?.id === targetFeatureId
+            ? draggedTask
+            : {
+                ...draggedTask,
+                feature: targetTask.feature ?? null,
+              };
+
+        nextTasks.splice(targetIndex + (insertAfter ? 1 : 0), 0, movedTask);
+        return nextTasks;
+      });
+    },
+    [setTasks],
+  );
 
   const updatedTask = (taskID) => {
     setTasks((prevTasks) =>
@@ -120,16 +273,59 @@ function MyTasks() {
   return (
     <div className="flex h-screen min-w-0 flex-1 overflow-hidden bg-slate-50">
       <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4">
-        <div className="w-full border border-border rounded-sm overflow-visible bg-surface">
-          {tasks.map((task) => {
-            const icon = myicons[task?.priority];
-            const Icon = icon?.icon;
-            const isSelected = selectedTask?.id === task.id;
+        <div className="w-full overflow-visible">
+          {Object.values(groupedTasks).map((group) => (
+            <div
+              key={group.id}
+              className="mb-3 overflow-visible rounded-sm border border-border bg-surface"
+            >
+              <div className="h-14 bg-slate-100 rounded flex items-center px-4">
+                <button
+                  type="button"
+                  onClick={() => toggleSprint(group.id)}
+                  className="mr-3 text-lg cursor-pointer"
+                  aria-expanded={Boolean(expanded[group.id])}
+                >
+                  {expanded[group.id] ? (
+                    <ChevronDown size={20} />
+                  ) : (
+                    <ChevronRight size={20} />
+                  )}
+                </button>
 
-            return (
+                <div className="flex-1">
+                  <div className="flex gap-2 items-center">
+                    <span className="font-sans font-bold text-[14px] leading-[20px] text-[#292A2E]">{group.title}</span>
+                    <span className='font-normal text-[14px] leading-5 text-[#292A2E]'>
+                      ({group.tasks.length} work items)
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="font-medium text-[14px] leading-[20px] text-[#505258] border border-[#DCDFE4] rounded-[4px] cursor-pointer px-3 py-1"
+                >
+                  Complete sprint
+                </button>
+              </div>
+
+              {expanded[group.id] &&
+                group.tasks.map((task, taskIndex) => {
+                  const icon = myicons[task?.priority];
+                  const Icon = icon?.icon;
+                  const isSelected = selectedTask?.id === task.id;
+
+                  return (
+                    <DraggableTaskRow
+                      key={task.id}
+                      taskId={task.id}
+                      featureId={group.id}
+                      index={taskIndex}
+                      moveTask={moveTask}
+                    >
               <div
                 onClick={() => openTaskDetails(task)}
-                key={task.id}
                 aria-current={isSelected ? "true" : undefined}
                 className={`grid grid-cols-[92px_minmax(140px,1.35fr)_minmax(120px,1fr)_minmax(104px,0.75fr)_42px_36px] items-center gap-3 border-b border-border px-3 py-1 text-sm cursor-pointer ${
                   isSelected ? "bg-blue-50" : "hover:bg-slate-50"
@@ -288,8 +484,11 @@ function MyTasks() {
                   {task.assignee?.avatar ? <UserRound /> : <Profile />}
                 </div>
               </div>
-            );
-          })}
+                    </DraggableTaskRow>
+                  );
+                })}
+            </div>
+          ))}
         </div>
       </div>
 
