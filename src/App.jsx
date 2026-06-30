@@ -7,6 +7,12 @@ import Sidebar from "./components/sidebar/Sidebar";
 import TaskModal from "./components/modals/TaskModal";
 import MyTasks from "./components/sidebar/NavigationMenu/MyTasks/MyTasks";
 
+const ROUTES = {
+  home: "/",
+  backlog: "/Backlog",
+  task: "/Backlog/task/:taskId",
+};
+
 function App() {
   return (
     <DndProvider backend={HTML5Backend}>
@@ -14,10 +20,9 @@ function App() {
         <div className="flex">
           <Sidebar />
           <Routes>
-            <Route path="/" element={<KanbanBoard />}>
-            </Route>
-            <Route path="/Backlog" element={<MyTasks />} />
-            <Route path="/Backlog/task/:taskId" element={<MyTasks />} />
+            <Route path={ROUTES.home} element={<KanbanBoard />}></Route>
+            <Route path={ROUTES.backlog} element={<MyTasks />} />
+            <Route path={ROUTES.task} element={<MyTasks />} />
           </Routes>
         </div>
         {/* <TaskModal /> */}

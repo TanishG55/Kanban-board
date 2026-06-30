@@ -1,12 +1,11 @@
-import { createContext , useContext , useState } from "react";
+import { createContext, useContext, useState } from "react";
 
 const ModalContext = createContext();
 
-export function ModalProvider ({children}) {
-
+export function ModalProvider({ children }) {
   const [selectedTask, setSelectedTask] = useState(null);
-  const [newTask , setNewTask] = useState(false);
- 
+  const [newTask, setNewTask] = useState(false);
+
   const openModal = (task) => {
     setSelectedTask(task);
   };
@@ -14,8 +13,8 @@ export function ModalProvider ({children}) {
   const closeModal = () => {
     setSelectedTask(null);
   };
-  
-    return (
+
+  return (
     <ModalContext.Provider
       value={{
         selectedTask,
@@ -26,10 +25,6 @@ export function ModalProvider ({children}) {
       {children}
     </ModalContext.Provider>
   );
-
 }
 
-
 export const useModal = () => useContext(ModalContext);
-
-

@@ -6,9 +6,9 @@ export function useLockBodyScroll(isLocked) {
 
     // Save the original overflow style to restore it accurately later
     const originalStyle = window.getComputedStyle(document.body).overflow;
-    
+
     // Prevent scrolling
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
 
     // Clean up function to re-enable scrolling when unmounted or closed
     return () => {
