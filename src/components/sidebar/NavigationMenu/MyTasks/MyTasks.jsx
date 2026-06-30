@@ -1,6 +1,12 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { useDrag, useDrop } from "react-dnd";
-import { ChevronDown, ChevronRight, UserRound, Pencil } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  UserRound,
+  Pencil,
+  Search,
+} from "lucide-react";
 import { High, Medium, Low, Profile } from "../../../../UI/Icons";
 import {
   FEATURES,
@@ -14,13 +20,7 @@ import TaskDetails from "../../../task/TaskDetails";
 
 const TASK_ROW_TYPE = "MY_TASK_ROW";
 
-function DraggableTaskRow({
-  children,
-  featureId,
-  index,
-  moveTask,
-  taskId,
-}) {
+function DraggableTaskRow({ children, featureId, index, moveTask, taskId }) {
   const rowRef = useRef(null);
 
   const [{ isDragging }, drag] = useDrag(
@@ -105,6 +105,10 @@ function MyTasks() {
 
   const [tasks, setTasks] = useLocalStorage("tasks", initialTasks);
   const selectedTask = tasks.find((task) => task.id === taskId);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchedQuery, SetsearchedQuery] = useState("");
+  const [SelectedAssignee, SetSelectedAssignee] = useState("");
+  const [SelectedStatus, SetSelectedStatus] = useState("");
 
   const [onHover, SetonHover] = useState(null);
   const [edit, setEdit] = useState(null);
@@ -136,7 +140,21 @@ function MyTasks() {
     },
   };
 
-  const groupedTasks = tasks.reduce((acc, task) => {
+  // filtering the tasks on the basis of the searched query
+  const filteredTasks = tasks.filter((task) => {
+    const query = searchedQuery.trim().toLowerCase();
+
+    const matchesSearch = !query || task.title?.toLowerCase().includes(query);
+
+    const matchesAssignee =
+      !SelectedAssignee || task.assignee?.name === SelectedAssignee;
+
+    const matchesStatus = !SelectedStatus || task.status === SelectedStatus;
+
+    return matchesSearch && matchesAssignee && matchesStatus;
+  });
+
+  const groupedTasks = filteredTasks.reduce((acc, task) => {
     const featureId = task.feature?.id || "backlog";
 
     if (!acc[featureId]) {
@@ -169,9 +187,7 @@ function MyTasks() {
         const draggedIndex = prevTasks.findIndex(
           (task) => task.id === draggedTaskId,
         );
-        const targetTask = prevTasks.find(
-          (task) => task.id === targetTaskId,
-        );
+        const targetTask = prevTasks.find((task) => task.id === targetTaskId);
 
         if (draggedIndex === -1 || !targetTask) return prevTasks;
 
@@ -257,6 +273,12 @@ function MyTasks() {
     setShowFeatureDropdown(null);
   };
 
+  const uniqueAssignees = [
+    ...new Map(
+      tasks.map((task) => [task.assignee.name, task.assignee]),
+    ).values(),
+  ];
+
   const openTaskDetails = (task) => {
     navigate(`/Backlog/task/${task.id}`, {
       state: {
@@ -270,9 +292,63 @@ function MyTasks() {
     navigate("/Backlog");
   };
 
+  // implementingg debouncing effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      SetsearchedQuery(searchInput);
+    }, 1000); // delay in milliseconds -> 1 seconds
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   return (
     <div className="flex h-screen min-w-0 flex-1 overflow-hidden bg-slate-50">
       <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4">
+        {/* searching , filters designss */}
+        <div className="flex flex-row items-center aligns-center gap-2 mb-4">
+          {/* search bar */}
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
+              size={16}
+            />
+            <input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              type="text"
+              placeholder="Search backlog"
+              className="w-[256px] rounded-sm border border-border py-2 pl-10 pr-4"
+            />
+          </div>
+          {/* assigne */}
+          <div className="relative">
+            <UserRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <select
+              onChange={(e) => SetSelectedAssignee(e.target.value)}
+              className="w-[160px] rounded-sm border border-border py-2 pl-10 pr-4 appearance-none"
+            >
+              <option value="">All Assignee</option>
+              {uniqueAssignees.map((assignee) => (
+                <option key={assignee.id}>{assignee.name}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          </div>
+
+          {/* status */}
+          <div className="relative">
+            <select
+              onChange={(e) => SetSelectedStatus(e.target.value)}
+              className="w-[160px] rounded-sm border border-border py-2 pl-10 pr-4 appearance-none"
+            >
+              <option value="">All Status</option>
+              {columns.map((cols, index) => (
+                <option key={index}>{cols}</option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          </div>
+        </div>
         <div className="w-full overflow-visible">
           {Object.values(groupedTasks).map((group) => (
             <div
@@ -295,8 +371,10 @@ function MyTasks() {
 
                 <div className="flex-1">
                   <div className="flex gap-2 items-center">
-                    <span className="font-sans font-bold text-[14px] leading-[20px] text-[#292A2E]">{group.title}</span>
-                    <span className='font-normal text-[14px] leading-5 text-[#292A2E]'>
+                    <span className="font-sans font-bold text-[14px] leading-[20px] text-[#292A2E]">
+                      {group.title}
+                    </span>
+                    <span className="font-normal text-[14px] leading-5 text-[#292A2E]">
                       ({group.tasks.length} work items)
                     </span>
                   </div>
@@ -324,166 +402,173 @@ function MyTasks() {
                       index={taskIndex}
                       moveTask={moveTask}
                     >
-              <div
-                onClick={() => openTaskDetails(task)}
-                aria-current={isSelected ? "true" : undefined}
-                className={`grid grid-cols-[92px_minmax(140px,1.35fr)_minmax(120px,1fr)_minmax(104px,0.75fr)_42px_36px] items-center gap-3 border-b border-border px-3 py-1 text-sm cursor-pointer ${
-                  isSelected ? "bg-blue-50" : "hover:bg-slate-50"
-                }`}
-              >
-                <div className="text-slate-700 font-medium whitespace-nowrap">
-                  {task.id}
-                </div>
+                      <div
+                        onClick={() => openTaskDetails(task)}
+                        aria-current={isSelected ? "true" : undefined}
+                        className={`grid grid-cols-[92px_minmax(140px,1.35fr)_minmax(120px,1fr)_minmax(104px,0.75fr)_42px_36px] items-center gap-3 border-b border-border px-3 py-1 text-sm cursor-pointer ${
+                          isSelected ? "bg-blue-50" : "hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className="text-slate-700 font-medium whitespace-nowrap">
+                          {task.id}
+                        </div>
 
-                <div
-                  onMouseEnter={() => SetonHover(task.id)}
-                  onMouseLeave={() => SetonHover(null)}
-                  className="min-w-0 cursor-pointer flex items-center gap-xs"
-                >
-                  <div className="min-w-0 hover:underline text-slate-700">
-                    {edit === task.id ? (
-                      <input
-                        autoFocus
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => setnewTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.currentTarget.blur();
-                            updatedTask(task.id);
-                          }
-                        }}
-                        type="text"
-                        value={newTitle}
-                        className="w-full min-w-0"
-                      />
-                    ) : (
-                      <span className="block truncate">{task.title}</span>
-                    )}
-                  </div>
-                  {onHover === task.id && (
-                    <Pencil
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEdit(task.id);
-                        setnewTitle(task.title);
-                      }}
-                      size={14}
-                    />
-                  )}
-                </div>
-
-                <div className="relative min-w-0">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowFeatureDropdown(task.id);
-                    }}
-                    className="block max-w-full truncate bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap"
-                  >
-                    {task.feature?.name}
-                  </button>
-
-                  {showFeatureDropdown === task.id && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="absolute top-10 z-10 w-44 bg-white border rounded shadow"
-                    >
-                      {FEATURES.map((feature) => (
-                        <button
-                          type="button"
-                          key={feature.id}
-                          className="w-full text-left px-3 py-2 hover:bg-slate-50"
-                          onClick={() => updatedFeature(task.id, feature)}
+                        <div
+                          onMouseEnter={() => SetonHover(task.id)}
+                          onMouseLeave={() => SetonHover(null)}
+                          className="min-w-0 cursor-pointer flex items-center gap-xs"
                         >
-                          {feature.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                          <div className="min-w-0 hover:underline text-slate-700">
+                            {edit === task.id ? (
+                              <input
+                                autoFocus
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => setnewTitle(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.currentTarget.blur();
+                                    updatedTask(task.id);
+                                  }
+                                }}
+                                type="text"
+                                value={newTitle}
+                                className="w-full min-w-0"
+                              />
+                            ) : (
+                              <span className="block truncate">
+                                {task.title}
+                              </span>
+                            )}
+                          </div>
+                          {onHover === task.id && (
+                            <Pencil
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEdit(task.id);
+                                setnewTitle(task.title);
+                              }}
+                              size={14}
+                            />
+                          )}
+                        </div>
 
-                {/* Status */}
-
-                <div className="relative min-w-0">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      SetshowStatusDropdown(task.id);
-                    }}
-                    className="block max-w-full truncate bg-slate-100 px-3 py-1 rounded whitespace-nowrap"
-                  >
-                    {task.status}
-                  </button>
-
-                  {showStatusDropdown === task.id && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="absolute top-11 left-0 z-10 w-36 rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden"
-                    >
-                      {statuses.map((status) =>
-                        status !== task.status ? (
+                        <div className="relative min-w-0">
                           <button
                             type="button"
-                            key={status}
-                            className="block w-full text-left px-3 py-2 hover:bg-slate-50"
-                            onClick={() => updatedStatus(task.id, status)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowFeatureDropdown(task.id);
+                            }}
+                            className="block max-w-full truncate bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap"
                           >
-                            {status}
+                            {task.feature?.name}
                           </button>
-                        ) : null,
-                      )}
-                    </div>
-                  )}
-                </div>
 
-                <div className="relative flex justify-center">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      SetshowPriorityDropdown(task.id);
-                    }}
-                    className={`flex items-center justify-center w-9 h-9 rounded-full ${icon?.bg} ${icon?.text} hover:scale-105 transition`}
-                  >
-                    {Icon && <Icon size={18} />}
-                  </button>
-
-                  {showPriorityDropdown === task.id && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="absolute top-11 left-0 z-10 w-36 rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden"
-                    >
-                      {Priorities.map((eachPriority) => {
-                        const PriorityIcon = myicons[eachPriority]?.icon;
-
-                        return (
-                          task.priority !== eachPriority && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updatedPriority(task.id, eachPriority)
-                              }
-                              key={eachPriority}
-                              className="w-full px-3 py-2 flex items-center gap-2 hover:bg-slate-50 text-left"
+                          {showFeatureDropdown === task.id && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute top-10 z-10 w-44 bg-white border rounded shadow"
                             >
-                              <PriorityIcon size={16} />
-                              <span>{eachPriority}</span>
-                            </button>
-                          )
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                              {FEATURES.map((feature) => (
+                                <button
+                                  type="button"
+                                  key={feature.id}
+                                  className="w-full text-left px-3 py-2 hover:bg-slate-50"
+                                  onClick={() =>
+                                    updatedFeature(task.id, feature)
+                                  }
+                                >
+                                  {feature.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
 
-                {/* assigned */}
+                        {/* Status */}
 
-                <div className="flex justify-center">
-                  {task.assignee?.avatar ? <UserRound /> : <Profile />}
-                </div>
-              </div>
+                        <div className="relative min-w-0">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              SetshowStatusDropdown(task.id);
+                            }}
+                            className="block max-w-full truncate bg-slate-100 px-3 py-1 rounded whitespace-nowrap"
+                          >
+                            {task.status}
+                          </button>
+
+                          {showStatusDropdown === task.id && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute top-11 left-0 z-10 w-36 rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden"
+                            >
+                              {statuses.map((status) =>
+                                status !== task.status ? (
+                                  <button
+                                    type="button"
+                                    key={status}
+                                    className="block w-full text-left px-3 py-2 hover:bg-slate-50"
+                                    onClick={() =>
+                                      updatedStatus(task.id, status)
+                                    }
+                                  >
+                                    {status}
+                                  </button>
+                                ) : null,
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="relative flex justify-center">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              SetshowPriorityDropdown(task.id);
+                            }}
+                            className={`flex items-center justify-center w-9 h-9 rounded-full ${icon?.bg} ${icon?.text} hover:scale-105 transition`}
+                          >
+                            {Icon && <Icon size={18} />}
+                          </button>
+
+                          {showPriorityDropdown === task.id && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute top-11 left-0 z-10 w-36 rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden"
+                            >
+                              {Priorities.map((eachPriority) => {
+                                const PriorityIcon =
+                                  myicons[eachPriority]?.icon;
+
+                                return (
+                                  task.priority !== eachPriority && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        updatedPriority(task.id, eachPriority)
+                                      }
+                                      key={eachPriority}
+                                      className="w-full px-3 py-2 flex items-center gap-2 hover:bg-slate-50 text-left"
+                                    >
+                                      <PriorityIcon size={16} />
+                                      <span>{eachPriority}</span>
+                                    </button>
+                                  )
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* assigned */}
+
+                        <div className="flex justify-center">
+                          {task.assignee?.avatar ? <UserRound /> : <Profile />}
+                        </div>
+                      </div>
                     </DraggableTaskRow>
                   );
                 })}
