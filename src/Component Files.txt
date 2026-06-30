@@ -1,0 +1,14 @@
+Component Files 
+1. Main file - Header.tsx 
+2. Test file - Unit Test cases - Jest/React Testing Library
+3. Style file - Styled components, module.css 
+4. Type file - js, jsx, ts, tsx 
+5. Storybook file - Design system - Independent environment to test our component 
+6. Mock file - static content 
+
+Header.tsx 
+header.tests.tsx
+header.styles.ts
+header.types.ts
+header.stories.tsx - fix
+header.mocks.ts 
